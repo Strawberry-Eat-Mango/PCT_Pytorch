@@ -22,7 +22,7 @@ that from https://github.com/erikwijmans/Pointnet2_PyTorch
 ### Models
 We get an accuracy of 93.2% on the ModelNet40 validation dataset
 
-The model path in ./checkpoints/train/models/model.t7
+The path of the model is in ./checkpoints/train/models/model.t7
 
 ### Example training and testing
 ```shell script
