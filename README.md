@@ -17,10 +17,10 @@ and
 ```shell script
 pip install pointnet2_ops_lib/.
 ```
-that from https://github.com/erikwijmans/Pointnet2_PyTorch
+The code from https://github.com/erikwijmans/Pointnet2_PyTorch and https://github.com/WangYueFt/dgcnn
 
 ### Models
-We get an accuracy of 93.2% on the ModelNet40 validation dataset
+We get an accuracy of 93.2% on the ModelNet40(modelnet.cs.princeton.edu) validation dataset
 
 The path of the model is in ./checkpoints/train/models/model.t7
 
