@@ -27,10 +27,10 @@ The path of the model is in ./checkpoints/train/models/model.t7
 ### Example training and testing
 ```shell script
 # train
-python main.py --exp_name=train --num_points=1024 --k=20 --use_sgd=True --batch_size 32 --epochs 250 --lr 0.0001
+python main.py --exp_name=train --num_points=1024 --use_sgd=True --batch_size 32 --epochs 250 --lr 0.0001
 
 # test
-python main.py --exp_name=test --num_points=1024 --k=20 --use_sgd=True --eval=True --model_path=checkpoints/best/models/model.t7 --test_batch_size 8
+python main.py --exp_name=test --num_points=1024 --use_sgd=True --eval=True --model_path=checkpoints/best/models/model.t7 --test_batch_size 8
 
 ```
 
