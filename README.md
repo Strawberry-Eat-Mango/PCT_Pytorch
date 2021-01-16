@@ -4,7 +4,7 @@ This is a Pytorch implementation of PCT: Point Cloud Transformer.
 Paper link: https://arxiv.org/pdf/2012.09688.pdf
 
 ### Requirements
-python > 3.7
+python >= 3.7
 
 pytorch >= 1.6
 
