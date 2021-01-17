@@ -135,7 +135,7 @@ def test(args, io):
 
     device = torch.device("cuda" if args.cuda else "cpu")
 
-    model = pct(args).to(device)
+    model = Pct(args).to(device)
     model = nn.DataParallel(model) 
     
     model.load_state_dict(torch.load(args.model_path))
