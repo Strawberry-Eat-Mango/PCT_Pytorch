@@ -24,7 +24,7 @@ class Local_op(nn.Module):
 
 class Pct(nn.Module):
     def __init__(self, args, output_channels=40):
-        super(pct, self).__init__()
+        super(Pct, self).__init__()
         self.args = args
         self.conv1 = nn.Conv1d(3, 64, kernel_size=1, bias=False)
         self.conv2 = nn.Conv1d(64, 64, kernel_size=1, bias=False)
