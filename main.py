@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from data import ModelNet40
-from model import pct
+from model import Pct
 import numpy as np
 from torch.utils.data import DataLoader
 from util import cal_loss, IOStream
@@ -34,7 +34,7 @@ def train(args, io):
 
     device = torch.device("cuda" if args.cuda else "cpu")
 
-    model = pct(args).to(device)
+    model = Pct(args).to(device)
     print(str(model))
     model = nn.DataParallel(model)
 
@@ -187,8 +187,6 @@ if __name__ == "__main__":
                         help='num of points to use')
     parser.add_argument('--dropout', type=float, default=0.5,
                         help='dropout rate')
-    parser.add_argument('--emb_dims', type=int, default=1024, metavar='N',
-                        help='Dimension of embeddings')
     parser.add_argument('--model_path', type=str, default='', metavar='N',
                         help='Pretrained model path')
     args = parser.parse_args()

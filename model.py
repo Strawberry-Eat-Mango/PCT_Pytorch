@@ -22,7 +22,7 @@ class Local_op(nn.Module):
         x = x.reshape(b, n, -1).permute(0, 2, 1)
         return x
 
-class pct(nn.Module):
+class Pct(nn.Module):
     def __init__(self, args, output_channels=40):
         super(pct, self).__init__()
         self.args = args
