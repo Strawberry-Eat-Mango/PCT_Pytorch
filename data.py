@@ -22,7 +22,7 @@ def load_data(partition):
 #     DATA_DIR = os.path.join(BASE_DIR, 'data')
     all_data = []
     all_label = []
-    for h5_name in glob.glob(os.path.join('/kaggle/input', 'modelnet40_ply_hdf5_2048', 'ply_data_%s*.h5'%partition)):
+    for h5_name in glob.glob(os.path.join('/kaggle/input', 'modelnet40', 'ply_data_%s*.h5'%partition)):
         f = h5py.File(h5_name)
         data = f['data'][:].astype('float32')
         label = f['label'][:].astype('int64')
