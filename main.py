@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from data import ModelNet40
-from model import pct
+from model import Pct
 import numpy as np
 from torch.utils.data import DataLoader
 from util import cal_loss, IOStream
@@ -34,13 +34,13 @@ def train(args, io):
 
     device = torch.device("cuda" if args.cuda else "cpu")
 
-    model = pct(args).to(device)
+    model = Pct(args).to(device)
     print(str(model))
     model = nn.DataParallel(model)
 
     if args.use_sgd:
         print("Use SGD")
-        opt = optim.SGD(model.parameters(), lr=args.lr*100, momentum=args.momentum, weight_decay=1e-4)
+        opt = optim.SGD(model.parameters(), lr=args.lr*100, momentum=args.momentum, weight_decay=5e-4)
     else:
         print("Use Adam")
         opt = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-4)
@@ -135,7 +135,7 @@ def test(args, io):
 
     device = torch.device("cuda" if args.cuda else "cpu")
 
-    model = pct(args).to(device)
+    model = Pct(args).to(device)
     model = nn.DataParallel(model) 
     
     model.load_state_dict(torch.load(args.model_path))
@@ -148,8 +148,12 @@ def test(args, io):
         data = data.permute(0, 2, 1)
         logits = model(data)
         preds = logits.max(dim=1)[1] 
-        test_true.append(label.cpu().numpy())
-        test_pred.append(preds.detach().cpu().numpy())
+        if args.test_batch_size == 1:
+            test_true.append([label.cpu().numpy()])
+            test_pred.append([preds.detach().cpu().numpy()])
+        else:
+            test_true.append(label.cpu().numpy())
+            test_pred.append(preds.detach().cpu().numpy())
 
     test_true = np.concatenate(test_true)
     test_pred = np.concatenate(test_pred)
@@ -187,10 +191,6 @@ if __name__ == "__main__":
                         help='num of points to use')
     parser.add_argument('--dropout', type=float, default=0.5,
                         help='dropout rate')
-    parser.add_argument('--emb_dims', type=int, default=1024, metavar='N',
-                        help='Dimension of embeddings')
-    parser.add_argument('--k', type=int, default=20, metavar='N',
-                        help='Num of nearest neighbors to use')
     parser.add_argument('--model_path', type=str, default='', metavar='N',
                         help='Pretrained model path')
     args = parser.parse_args()
