@@ -46,3 +46,30 @@ If it is helpful for your work, please cite this paper:
       primaryClass={cs.CV}
 }
 ```
+
+## supplement
+### Requirements on RTX3090
+
+conda command
+
+```shell script
+conda install pytorch==1.8.0 torchvision==0.9.0 torchaudio==0.8.0 cudatoolkit=11.1 -c pytorch -c conda-forge
+conda install h5py
+conda install scikit-learn
+```
+
+shell
+
+```shell script
+pip install pointnet2_ops_lib/.
+```
+
+### training and testing command
+```shell script
+# train
+nohup python main_cls.py --exp_name=train --num_points=1024 --use_sgd=True --batch_size 32 --epochs 250 --lr 0.0001 &
+
+# test
+nohup python main_cls.py --exp_name=test --num_points=1024 --use_sgd=True --eval=True --model_path=checkpoints/train/models/model.t7 --test_batch_size 8 &
+
+```

@@ -1,12 +1,14 @@
 from __future__ import print_function
 import os
 import argparse
+import logging
+import socket
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from data import ModelNet40
-from model import Pct
+from model.pct_cls import *
 import numpy as np
 from torch.utils.data import DataLoader
 from util import cal_loss, IOStream
@@ -21,8 +23,8 @@ def _init_():
         os.makedirs('checkpoints/'+args.exp_name)
     if not os.path.exists('checkpoints/'+args.exp_name+'/'+'models'):
         os.makedirs('checkpoints/'+args.exp_name+'/'+'models')
-    os.system('cp main.py checkpoints'+'/'+args.exp_name+'/'+'main.py.backup')
-    os.system('cp model.py checkpoints' + '/' + args.exp_name + '/' + 'model.py.backup')
+    os.system('cp main_cls.py checkpoints'+'/'+args.exp_name+'/'+'main_cls.py.backup')
+    os.system('cp ./model/pct_cls.py checkpoints' + '/' + args.exp_name + '/' + 'pct_cls.py.backup')
     os.system('cp util.py checkpoints' + '/' + args.exp_name + '/' + 'util.py.backup')
     os.system('cp data.py checkpoints' + '/' + args.exp_name + '/' + 'data.py.backup')
 
@@ -35,7 +37,12 @@ def train(args, io):
     device = torch.device("cuda" if args.cuda else "cpu")
 
     model = Pct(args).to(device)
-    print(str(model))
+
+    # print model detail
+    num_params = sum(param.numel() for param in model.parameters())
+    io.cprint('Model Parameters: {:.2e}'.format(num_params)) # print('#Parameters: {:.2e}'.format(num_params))
+    io.cprint('Build model:\n{}'.format(str(model)))
+
     model = nn.DataParallel(model)
 
     if args.use_sgd:
@@ -50,7 +57,7 @@ def train(args, io):
     criterion = cal_loss
     best_test_acc = 0
 
-    for epoch in range(args.epochs):
+    for epoch in range(250):
         scheduler.step()
         train_loss = 0.0
         count = 0.0
@@ -58,7 +65,7 @@ def train(args, io):
         train_pred = []
         train_true = []
         idx = 0
-        total_time = 0.0
+        epoch_train_time = 0.0
         for data, label in (train_loader):
             data, label = data.to(device), label.to(device).squeeze() 
             data = data.permute(0, 2, 1)
@@ -71,7 +78,7 @@ def train(args, io):
             loss.backward()
             opt.step()
             end_time = time.time()
-            total_time += (end_time - start_time)
+            epoch_train_time += (end_time - start_time)
             
             preds = logits.max(dim=1)[1]
             count += batch_size
@@ -80,16 +87,17 @@ def train(args, io):
             train_pred.append(preds.detach().cpu().numpy())
             idx += 1
             
-        print ('train total time is',total_time)
         train_true = np.concatenate(train_true)
         train_pred = np.concatenate(train_pred)
-        outstr = 'Train %d, loss: %.6f, train acc: %.6f, train avg acc: %.6f' % (epoch,
+        now_time_str = time.strftime('%Y-%m-%d %H:%M:%S ',time.localtime(time.time()))
+        outstr = 'Train %d, loss: %.6f, train acc: %.6f, train avg acc: %.6f, Iter train time: %.2fs' % (epoch,
                                                                                 train_loss*1.0/count,
                                                                                 metrics.accuracy_score(
                                                                                 train_true, train_pred),
                                                                                 metrics.balanced_accuracy_score(
-                                                                                train_true, train_pred))
-        io.cprint(outstr)
+                                                                                train_true, train_pred),
+                                                                                epoch_train_time)
+        io.cprint(now_time_str + outstr)
 
         ####################
         # Test
@@ -99,7 +107,7 @@ def train(args, io):
         model.eval()
         test_pred = []
         test_true = []
-        total_time = 0.0
+        epoch_test_time = 0.0
         for data, label in test_loader:
             data, label = data.to(device), label.to(device).squeeze()
             data = data.permute(0, 2, 1)
@@ -107,23 +115,24 @@ def train(args, io):
             start_time = time.time()
             logits = model(data)
             end_time = time.time()
-            total_time += (end_time - start_time)
+            epoch_test_time += (end_time - start_time)
             loss = criterion(logits, label)
             preds = logits.max(dim=1)[1]
             count += batch_size
             test_loss += loss.item() * batch_size
             test_true.append(label.cpu().numpy())
             test_pred.append(preds.detach().cpu().numpy())
-        print ('test total time is', total_time)
         test_true = np.concatenate(test_true)
         test_pred = np.concatenate(test_pred)
         test_acc = metrics.accuracy_score(test_true, test_pred)
         avg_per_class_acc = metrics.balanced_accuracy_score(test_true, test_pred)
-        outstr = 'Test %d, loss: %.6f, test acc: %.6f, test avg acc: %.6f' % (epoch,
+        now_time_str = time.strftime('%Y-%m-%d %H:%M:%S ',time.localtime(time.time()))
+        outstr = 'Test %d, loss: %.6f, test acc: %.6f, test avg acc: %.6f, Iter test time: %.2fs' % (epoch,
                                                                             test_loss*1.0/count,
                                                                             test_acc,
-                                                                            avg_per_class_acc)
-        io.cprint(outstr)
+                                                                            avg_per_class_acc,
+                                                                            epoch_test_time)
+        io.cprint(now_time_str + outstr)
         if test_acc >= best_test_acc:
             best_test_acc = test_acc
             torch.save(model.state_dict(), 'checkpoints/%s/models/model.t7' % args.exp_name)
@@ -198,6 +207,7 @@ if __name__ == "__main__":
     _init_()
 
     io = IOStream('checkpoints/' + args.exp_name + '/run.log')
+    io.cprint('{:d} GPUs available'.format(torch.cuda.device_count()))
     io.cprint(str(args))
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -209,7 +219,12 @@ if __name__ == "__main__":
     else:
         io.cprint('Using CPU')
 
+    torch.cuda.synchronize()
+    start_time = time.time()
     if not args.eval:
         train(args, io)
     else:
         test(args, io)
+    torch.cuda.synchronize()
+    total_time = time.time() - start_time
+    io.cprint("total_time: {:.2f}s".format(total_time))

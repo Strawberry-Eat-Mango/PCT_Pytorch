@@ -1,0 +1,7 @@
+/data
+/pointnet2_ops_lib
+/checkpoints
+/__pycache__
+*.gitingnore
+nohup.out
+*/__pycache__
